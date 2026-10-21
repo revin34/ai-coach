@@ -43,79 +43,8 @@
               {{ t('login.form_subtitle') }}
             </p>
 
-            <div class="mt-8 space-y-3">
-              <UButton
-                v-if="appleSignInEnabled"
-                block
-                size="xl"
-                icon="i-simple-icons-apple"
-                color="neutral"
-                variant="solid"
-                class="h-14 min-w-full rounded-xl bg-black text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-900"
-                :loading="loadingApple || isInitializing"
-                @click="
-                  () => {
-                    void handleAppleLogin()
-                  }
-                "
-              >
-                {{ isInitializing ? t('login.connecting') : t('login.apple') }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                icon="i-simple-icons-google"
-                color="primary"
-                variant="solid"
-                class="h-14 min-w-full rounded-xl text-xs font-bold uppercase tracking-[0.15em]"
-                :loading="loading || isInitializing"
-                @click="
-                  () => {
-                    void handleGoogleLogin()
-                  }
-                "
-              >
-                {{ isInitializing ? t('login.connecting') : t('login.google') }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                color="neutral"
-                variant="outline"
-                class="h-14 min-w-full rounded-xl border-white/10 text-xs font-bold uppercase tracking-[0.12em]"
-                :loading="loadingStrava || isInitializing"
-                @click="
-                  () => {
-                    void handleStravaLogin()
-                  }
-                "
-              >
-                <template #leading>
-                  <UIcon name="i-simple-icons-strava" class="h-5 w-5 text-[#FC4C02]" />
-                </template>
-                {{ isInitializing ? t('login.connecting') : t('login.strava') }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                color="neutral"
-                variant="outline"
-                class="h-14 min-w-full rounded-xl border-white/10 text-xs font-bold uppercase tracking-[0.12em]"
-                :loading="loadingIntervals || isInitializing"
-                @click="
-                  () => {
-                    void handleIntervalsLogin()
-                  }
-                "
-              >
-                <template #leading>
-                  <img src="/images/logos/intervals.png" alt="" class="h-5 w-5" />
-                </template>
-                {{ isInitializing ? t('login.connecting') : t('login.intervals') }}
-              </UButton>
+            <div class="mt-8">
+              <AuthPasswordAuthForm mode="login" :callback-url="callbackUrl" />
             </div>
 
             <p class="mt-8 text-sm text-gray-400">
@@ -143,21 +72,6 @@
               >.
             </p>
           </div>
-
-          <div
-            v-if="isInitializing"
-            class="absolute inset-0 z-50 flex items-center justify-center bg-[oklch(12%_0.015_155)]/90"
-          >
-            <div class="text-center">
-              <UIcon
-                name="i-heroicons-arrow-path"
-                class="mx-auto h-8 w-8 animate-spin text-primary-400"
-              />
-              <p class="font-athletic mt-4 text-lg font-bold uppercase tracking-wide text-white">
-                {{ t('login.signing_in') }}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </UContainer>
@@ -168,12 +82,7 @@
   import { useTranslate } from '@tolgee/vue'
 
   const { t } = useTranslate('auth')
-  const { signIn } = useAuth()
   const route = useRoute()
-  const toast = useToast()
-  const { trackLogin } = useAnalytics()
-  const runtimeConfig = useRuntimeConfig()
-  const appleSignInEnabled = computed(() => Boolean(runtimeConfig.public.appleSignInEnabled))
 
   definePageMeta({
     layout: 'home',
@@ -194,78 +103,4 @@
     twitterDescription: () => t.value('login.seo_description'),
     twitterImage: '/images/og-image.png'
   })
-
-  const loading = ref(false)
-  const loadingApple = ref(false)
-  const loadingStrava = ref(false)
-  const loadingIntervals = ref(false)
-  const isInitializing = ref(false)
-
-  async function handleAppleLogin() {
-    trackLogin('apple')
-    isInitializing.value = true
-    loadingApple.value = true
-    try {
-      await signIn('apple', { callbackUrl })
-    } catch (error: any) {
-      toast.add({
-        title: t.value('login.error_title'),
-        description: error.message || t.value('login.error_apple'),
-        color: 'error'
-      })
-      isInitializing.value = false
-      loadingApple.value = false
-    }
-  }
-
-  async function handleGoogleLogin() {
-    trackLogin('google')
-    isInitializing.value = true
-    loading.value = true
-    try {
-      await signIn('google', { callbackUrl })
-    } catch (error: any) {
-      toast.add({
-        title: t.value('login.error_title'),
-        description: error.message || t.value('login.error_google'),
-        color: 'error'
-      })
-      isInitializing.value = false
-      loading.value = false
-    }
-  }
-
-  async function handleStravaLogin() {
-    trackLogin('strava')
-    isInitializing.value = true
-    loadingStrava.value = true
-    try {
-      await signIn('strava', { callbackUrl })
-    } catch (error: any) {
-      toast.add({
-        title: t.value('login.error_title'),
-        description: error.message || t.value('login.error_strava'),
-        color: 'error'
-      })
-      isInitializing.value = false
-      loadingStrava.value = false
-    }
-  }
-
-  async function handleIntervalsLogin() {
-    trackLogin('intervals')
-    isInitializing.value = true
-    loadingIntervals.value = true
-    try {
-      await signIn('intervals', { callbackUrl })
-    } catch (error: any) {
-      toast.add({
-        title: t.value('login.error_title'),
-        description: error.message || t.value('login.error_intervals'),
-        color: 'error'
-      })
-      isInitializing.value = false
-      loadingIntervals.value = false
-    }
-  }
 </script>

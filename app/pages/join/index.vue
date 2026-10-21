@@ -47,84 +47,9 @@
               {{ joinFormSubtitle }}
             </p>
 
-            <div class="mt-8 space-y-3">
-              <UButton
-                v-if="appleSignInEnabled"
-                block
-                size="xl"
-                icon="i-simple-icons-apple"
-                color="neutral"
-                variant="solid"
-                class="h-14 min-w-full rounded-xl bg-black text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-900"
-                :loading="loadingApple"
-                @click="
-                  () => {
-                    void handleAppleLogin()
-                  }
-                "
-              >
-                {{ joinApple }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                icon="i-simple-icons-google"
-                color="primary"
-                variant="solid"
-                class="h-14 min-w-full rounded-xl text-xs font-bold uppercase tracking-[0.15em]"
-                :loading="loading"
-                @click="
-                  () => {
-                    void handleGoogleLogin()
-                  }
-                "
-              >
-                {{ joinGoogle }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                color="neutral"
-                variant="outline"
-                class="h-14 min-w-full rounded-xl border-white/10 text-xs font-bold uppercase tracking-[0.12em]"
-                :loading="loadingStrava"
-                @click="
-                  () => {
-                    void handleStravaLogin()
-                  }
-                "
-              >
-                <template #leading>
-                  <UIcon name="i-simple-icons-strava" class="h-5 w-5 text-[#FC4C02]" />
-                </template>
-                {{ joinStrava }}
-              </UButton>
-
-              <UButton
-                block
-                size="xl"
-                color="neutral"
-                variant="outline"
-                class="h-14 min-w-full rounded-xl border-white/10 text-xs font-bold uppercase tracking-[0.12em]"
-                :loading="loadingIntervals"
-                @click="
-                  () => {
-                    void handleIntervalsLogin()
-                  }
-                "
-              >
-                <template #leading>
-                  <img src="/images/logos/intervals.png" alt="" class="h-5 w-5" />
-                </template>
-                {{ joinIntervals }}
-              </UButton>
+            <div class="mt-8">
+              <AuthPasswordAuthForm mode="register" :callback-url="callbackUrl" />
             </div>
-
-            <p class="mt-5 text-xs font-bold uppercase tracking-widest text-primary-400">
-              {{ joinFreeForeverNote }}
-            </p>
 
             <p class="mt-8 text-sm text-gray-400">
               {{ joinAlreadyAccount }}
@@ -159,7 +84,6 @@
 
 <script setup lang="ts">
   import { useTranslate } from '@tolgee/vue'
-  import { buildAcquisitionContext } from '#shared/analytics-events'
 
   const { t } = useTranslate('auth')
 
@@ -173,14 +97,7 @@
       return translated === key || invalidValues.includes(translated) ? fallback : translated
     })
 
-  const { signIn } = useAuth()
   const route = useRoute()
-  const toast = useToast()
-  const { trackSignupStarted, trackSignupFailed } = useAnalytics()
-  const runtimeConfig = useRuntimeConfig()
-  const appleSignInEnabled = computed(() => Boolean(runtimeConfig.public.appleSignInEnabled))
-
-  const acquisitionContext = computed(() => buildAcquisitionContext(route.query, 'join'))
 
   definePageMeta({
     layout: 'home',
@@ -214,11 +131,6 @@
     twitterImage: '/images/og-image.png'
   })
 
-  const loading = ref(false)
-  const loadingApple = ref(false)
-  const loadingStrava = ref(false)
-  const loadingIntervals = ref(false)
-
   const joinTitle = translateOrFallback('join.title', 'Create your')
   const joinSubtitle = translateOrFallback('join.subtitle', 'account')
   const joinTagline = translateOrFallback(
@@ -229,31 +141,6 @@
     'join.form_subtitle',
     'Start free with a 14-day full-access trial. No credit card required.',
     ['Create your Coach Watts account. No credit card required.']
-  )
-  const joinErrorTitle = translateOrFallback('join.error_title', 'Signup failed')
-  const joinErrorApple = translateOrFallback(
-    'join.error_apple',
-    'Could not start Apple signup. Please try again.'
-  )
-  const joinErrorGoogle = translateOrFallback(
-    'join.error_google',
-    'Could not start Google signup. Please try again.'
-  )
-  const joinErrorStrava = translateOrFallback(
-    'join.error_strava',
-    'Could not start Strava signup. Please try again.'
-  )
-  const joinErrorIntervals = translateOrFallback(
-    'join.error_intervals',
-    'Could not start Intervals signup. Please try again.'
-  )
-  const joinApple = translateOrFallback('join.apple', 'Create Account with Apple')
-  const joinGoogle = translateOrFallback('join.google', 'Create Account with Google')
-  const joinStrava = translateOrFallback('join.strava', 'Create Account with Strava')
-  const joinIntervals = translateOrFallback('join.intervals', 'Create Account with Intervals.icu')
-  const joinFreeForeverNote = translateOrFallback(
-    'join.free_forever_note',
-    'Free forever with optional upgrades. Your 14-day trial starts at signup.'
   )
   const joinAlreadyAccount = translateOrFallback('join.already_account', 'Already have an account?')
   const joinLogin = translateOrFallback('join.login', 'Log in')
@@ -300,77 +187,4 @@
   const aiAdvice = computed(() =>
     referral.value === 'hall-of-fame' ? joinHallOfFameAiAdvice.value : joinAiAdvice.value
   )
-
-  function showSignupError(
-    description: string,
-    error: unknown,
-    provider: 'apple' | 'google' | 'strava' | 'intervals'
-  ) {
-    console.error(`${provider} signup error:`, error)
-    toast.add({
-      title: joinErrorTitle.value,
-      description: error instanceof Error ? error.message : description,
-      color: 'error'
-    })
-  }
-
-  function signupFailureCode(error: unknown) {
-    if (error instanceof Error && error.message) {
-      return error.message.slice(0, 64)
-    }
-    return 'unknown_error'
-  }
-
-  async function handleAppleLogin() {
-    trackSignupStarted('apple', acquisitionContext.value)
-    loadingApple.value = true
-    try {
-      await signIn('apple', { callbackUrl })
-    } catch (error: unknown) {
-      showSignupError(joinErrorApple.value, error, 'apple')
-      trackSignupFailed('apple', 'oauth_start', signupFailureCode(error), acquisitionContext.value)
-      loadingApple.value = false
-    }
-  }
-
-  async function handleGoogleLogin() {
-    trackSignupStarted('google', acquisitionContext.value)
-    loading.value = true
-    try {
-      await signIn('google', { callbackUrl })
-    } catch (error: unknown) {
-      showSignupError(joinErrorGoogle.value, error, 'google')
-      trackSignupFailed('google', 'oauth_start', signupFailureCode(error), acquisitionContext.value)
-      loading.value = false
-    }
-  }
-
-  async function handleStravaLogin() {
-    trackSignupStarted('strava', acquisitionContext.value)
-    loadingStrava.value = true
-    try {
-      await signIn('strava', { callbackUrl })
-    } catch (error: unknown) {
-      showSignupError(joinErrorStrava.value, error, 'strava')
-      trackSignupFailed('strava', 'oauth_start', signupFailureCode(error), acquisitionContext.value)
-      loadingStrava.value = false
-    }
-  }
-
-  async function handleIntervalsLogin() {
-    trackSignupStarted('intervals', acquisitionContext.value)
-    loadingIntervals.value = true
-    try {
-      await signIn('intervals', { callbackUrl })
-    } catch (error: unknown) {
-      showSignupError(joinErrorIntervals.value, error, 'intervals')
-      trackSignupFailed(
-        'intervals',
-        'oauth_start',
-        signupFailureCode(error),
-        acquisitionContext.value
-      )
-      loadingIntervals.value = false
-    }
-  }
 </script>
