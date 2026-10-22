@@ -12,7 +12,13 @@
           class="h-full w-full z-0"
           @ready="onMapReady"
         >
-          <LTileLayer :url="tileUrl" :attribution="attribution" layer-type="base" name="Base" />
+          <LTileLayer
+            :url="tileUrl"
+            :attribution="attribution"
+            :class-name="colorMode.value === 'dark' ? 'map-tiles-dark' : ''"
+            layer-type="base"
+            name="Base"
+          />
 
           <!-- Main Route (possibly colored) -->
           <template v-if="coloredSegments.length > 0">
@@ -169,13 +175,10 @@
     return segments
   })
 
-  const tileUrl = computed(() => {
-    return colorMode.value === 'dark'
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-  })
+  // CARTO basemaps now require an API key; OSM tiles are keyless. Dark mode is a CSS filter.
+  const tileUrl = computed(() => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png')
 
-  const attribution = '&copy; OpenStreetMap contributors &copy; CARTO'
+  const attribution = '&copy; OpenStreetMap contributors'
   const primaryColor = '#10b981'
 
   const mapOptions = computed(() => ({
@@ -230,4 +233,8 @@
   :deep(.leaflet-control-attribution) {
     display: none !important;
   }
+
+:deep(.map-tiles-dark) {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
 </style>
