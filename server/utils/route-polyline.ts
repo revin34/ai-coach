@@ -1,5 +1,3 @@
-import { encode } from '@googlemaps/polyline-codec'
-
 type LatLng = [number, number]
 
 function isValidPoint(point: unknown): point is LatLng {
@@ -10,6 +8,33 @@ function isValidPoint(point: unknown): point is LatLng {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false
   // Devices report 0,0 while they still have no GPS fix.
   return !(lat === 0 && lng === 0)
+}
+
+// Google encoded polyline algorithm (precision 5). Implemented locally because
+// `@googlemaps/polyline-codec` is CommonJS and its named exports cannot be
+// imported by the worker (tsx / native Node ESM).
+function encodeValue(value: number, out: string[]): void {
+  let v = value < 0 ? ~(value << 1) : value << 1
+  while (v >= 0x20) {
+    out.push(String.fromCharCode((0x20 | (v & 0x1f)) + 63))
+    v >>= 5
+  }
+  out.push(String.fromCharCode(v + 63))
+}
+
+function encodePolyline(points: LatLng[]): string {
+  const out: string[] = []
+  let prevLat = 0
+  let prevLng = 0
+  for (const [lat, lng] of points) {
+    const latE5 = Math.round(lat * 1e5)
+    const lngE5 = Math.round(lng * 1e5)
+    encodeValue(latE5 - prevLat, out)
+    encodeValue(lngE5 - prevLng, out)
+    prevLat = latE5
+    prevLng = lngE5
+  }
+  return out.join('')
 }
 
 /**
@@ -32,5 +57,5 @@ export function buildRoutePolyline(latlng: unknown, maxPoints = 250): string | n
     }
   }
 
-  return encode(sampled.map(([lat, lng]) => [lat, lng] as [number, number]))
+  return encodePolyline(sampled)
 }

@@ -3,6 +3,16 @@ import { decode } from '@googlemaps/polyline-codec'
 import { buildRoutePolyline } from '../../../../server/utils/route-polyline'
 
 describe('buildRoutePolyline', () => {
+  it('matches the reference example from the encoded polyline specification', () => {
+    expect(
+      buildRoutePolyline([
+        [38.5, -120.2],
+        [40.7, -120.95],
+        [43.252, -126.453]
+      ])
+    ).toBe('_p~iF~ps|U_ulLnnqC_mqNvxq`@')
+  })
+
   it('encodes a simple route that round-trips through decode', () => {
     const route: [number, number][] = [
       [39.600956, 2.601888],
