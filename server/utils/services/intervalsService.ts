@@ -38,6 +38,7 @@ import {
 import { getZoneIndex, DEFAULT_HR_ZONES, DEFAULT_POWER_ZONES } from '../training-metrics'
 import { triggerReadinessCheckIfNeeded } from './wellness-analysis'
 import { deduplicationService } from './deduplicationService'
+import { buildRoutePolyline } from '../route-polyline'
 import { triggerWorkoutDeduplicationIfEnabled } from '../trigger-workout-deduplication'
 import { shouldIngestWellness } from '../integration-settings'
 import { persistIntervalsPlannedWorkoutImport } from '../canonical-planned-workout-write'
@@ -894,6 +895,20 @@ export const IntervalsService = {
           await yieldTaskHeartbeat()
         }
       }
+    }
+
+    // Route thumbnails read `summaryPolyline`, which only Strava fills natively.
+    // Derive it from the GPS stream so Intervals activities get a preview too.
+    const routePolyline = buildRoutePolyline(latlngData)
+    if (routePolyline) {
+      await prisma.workout.updateMany({
+        where: {
+          id: workoutId,
+          OR: [{ summaryPolyline: null }, { summaryPolyline: '' }]
+        },
+        data: { summaryPolyline: routePolyline }
+      })
+      await yieldTaskHeartbeat()
     }
 
     return workoutStream
