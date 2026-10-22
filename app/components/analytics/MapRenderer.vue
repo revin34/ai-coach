@@ -15,7 +15,6 @@
           <LTileLayer
             :url="tileUrl"
             :attribution="attribution"
-            :class-name="colorMode.value === 'dark' ? 'map-tiles-dark' : ''"
             layer-type="base"
             name="Base"
           />
@@ -103,7 +102,6 @@
 
   const { onScrub } = useAnalyticsBus()
   const theme = useTheme()
-  const colorMode = useColorMode()
 
   const mapObject = shallowRef<any>(null)
   const zoom = ref(13)
@@ -175,7 +173,7 @@
     return segments
   })
 
-  // CARTO basemaps now require an API key; OSM tiles are keyless. Dark mode is a CSS filter.
+  // CARTO basemaps now require an API key; OSM tiles are keyless. The map stays in light style in both themes.
   const tileUrl = computed(() => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png')
 
   const attribution = '&copy; OpenStreetMap contributors'
@@ -233,8 +231,4 @@
   :deep(.leaflet-control-attribution) {
     display: none !important;
   }
-
-:deep(.map-tiles-dark) {
-  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
-}
 </style>
